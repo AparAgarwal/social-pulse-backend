@@ -1,6 +1,6 @@
 import express from "express";
-import userRouter from "./routes/user.routes.js";
-import staticRouter from "./routes/static.routes.js";
+import userRoutes from "./routes/user.routes.js";
+import authRoutes from "./routes/auth.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { ApiError } from "./utils/ApiError.js";
 
@@ -9,8 +9,8 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.use('/', staticRouter);
-app.use('/user', userRouter);
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/user', userRoutes);
 
 // 404 - handler
 app.use((req, res, next) => {
