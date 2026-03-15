@@ -1,10 +1,21 @@
 import express from "express";
+import cors from "cors";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { ApiError } from "./utils/ApiError.js";
 
 const app = express();
+
+const allowedOrigins = (process.env.CORS_ORIGIN || process.env.CLIENT_URL || "")
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+app.use(cors({
+    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
+    credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
