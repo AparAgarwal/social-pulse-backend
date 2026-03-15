@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 
 const userSchema = new mongoose.Schema({
     fullname: {
@@ -33,7 +34,13 @@ const userSchema = new mongoose.Schema({
     avatar: {
         type: String,
         default: null
-    }
+    },
+    refreshTokens: [
+        {
+            token: { type: String, required: true },
+            createdAt: { type: Date, default: Date.now }
+        }
+    ]
 }, { timestamps: true });
 
 userSchema.pre('save', async function () {
@@ -46,9 +53,32 @@ userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
+userSchema.methods.generateAccessToken = function () {
+    return jwt.sign(
+        {
+            id: this._id,
+            email: this.email
+        },
+        process.env.ACCESS_SECRET,
+        { expiresIn: process.env.ACCESS_EXPIRY || '15m' }
+    );
+};
+
+userSchema.methods.generateRefreshToken = function () {
+    return jwt.sign(
+        {
+            id: this._id,
+            email: this.email,
+        },
+        process.env.REFRESH_SECRET,
+        { expiresIn: process.env.REFRESH_EXPIRY || '7d' }
+    );
+};
+
 userSchema.methods.toJSON = function () {
     const obj = this.toObject();
     delete obj.password;
+    delete obj.refreshTokens;
     return obj;
 };
 
