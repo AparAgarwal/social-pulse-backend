@@ -48,6 +48,30 @@ const updateUserImage = async ({
     return new ApiResponse(200, user, successMessage);
 };
 
+const removeUserImage = async ({ user, target, successMessage }) => {
+    const publicId = target === 'avatar'
+        ? user.avatarPublicId
+        : user.bannerPublicId;
+
+    if (!publicId) {
+        throw new ApiError(400, `No ${target} found to delete`);
+    }
+
+    await deleteFromCloudinary(publicId).catch(() => { });
+
+    if (target === 'avatar') {
+        user.avatarUrl = null;
+        user.avatarPublicId = null;
+    } else {
+        user.bannerUrl = null;
+        user.bannerPublicId = null;
+    }
+
+    await user.save();
+
+    return new ApiResponse(200, user, successMessage);
+};
+
 // Profile Read Controllers
 export const getCurrentUser = asyncHandler(async (req, res) => {
     const user = await User.findById(req.user.id).select("-sessions");
@@ -102,7 +126,7 @@ export const updateCurrentUserProfile = asyncHandler(async (req, res) => {
         const user = await User.findByIdAndUpdate(
             userId,
             { $set: updatePayload },
-            { new: true, runValidators: true }
+            { returnDocument: 'after', runValidators: true }
         ).select('-sessions');
 
         if (!user) {
@@ -161,6 +185,46 @@ export const uploadBanner = asyncHandler(async (req, res) => {
         folder: `social-pulse/users/${user._id}/banner`,
         target: 'banner',
         successMessage: 'Banner updated successfully'
+    });
+
+    return res.status(200).json(response);
+});
+
+export const deleteAvatar = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+        throw new ApiError(401, 'Unauthorized');
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new ApiError(404, 'User not found');
+    }
+
+    const response = await removeUserImage({
+        user,
+        target: 'avatar',
+        successMessage: 'Avatar deleted successfully'
+    });
+
+    return res.status(200).json(response);
+});
+
+export const deleteBanner = asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    if (!userId) {
+        throw new ApiError(401, 'Unauthorized');
+    }
+
+    const user = await User.findById(userId);
+    if (!user) {
+        throw new ApiError(404, 'User not found');
+    }
+
+    const response = await removeUserImage({
+        user,
+        target: 'banner',
+        successMessage: 'Banner deleted successfully'
     });
 
     return res.status(200).json(response);

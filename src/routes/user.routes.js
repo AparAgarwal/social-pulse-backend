@@ -4,6 +4,8 @@ import {
     getCurrentUser,
     getPublicUserProfile,
     updateCurrentUserProfile,
+    deleteAvatar,
+    deleteBanner,
     uploadAvatar,
     uploadBanner
 } from "../controllers/user.controller.js";
@@ -19,5 +21,7 @@ router.get('/:username', getPublicUserProfile);
 
 router.patch('/me/avatar', authenticate, uploadAvatarImage, uploadAvatar);
 router.patch('/me/banner', authenticate, uploadBannerImage, uploadBanner);
+router.delete('/me/avatar', authenticate, deleteAvatar);
+router.delete('/me/banner', authenticate, deleteBanner);
 
 export default router;
