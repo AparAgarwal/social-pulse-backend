@@ -50,7 +50,7 @@ const updateUserImage = async ({
 
 // Profile Read Controllers
 export const getCurrentUser = asyncHandler(async (req, res) => {
-    const user = await User.findById(req.user.id).select("-refreshTokens");
+    const user = await User.findById(req.user.id).select("-sessions");
     if (!user) {
         throw new ApiError(404, "User not found");
     }
@@ -103,7 +103,7 @@ export const updateCurrentUserProfile = asyncHandler(async (req, res) => {
             userId,
             { $set: updatePayload },
             { new: true, runValidators: true }
-        ).select('-refreshTokens');
+        ).select('-sessions');
 
         if (!user) {
             throw new ApiError(404, 'User not found');

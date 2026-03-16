@@ -18,4 +18,8 @@ const loginSchema = z
         path: ['email'],
     });
 
-export { registerSchema, loginSchema };
+const revokeSessionSchema = z.object({
+    sessionId: z.uuid({ error: 'Valid sessionId is required' }),
+});
+
+export { registerSchema, loginSchema, revokeSessionSchema };

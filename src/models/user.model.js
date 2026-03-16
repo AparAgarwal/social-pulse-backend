@@ -2,6 +2,22 @@ import mongoose from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 
+const sessionSchema = new mongoose.Schema(
+    {
+        sessionId: { type: String, required: true },
+        refreshTokenHash: { type: String, required: true },
+        deviceType: { type: String, default: "unknown" },
+        os: { type: String, default: "Unknown" },
+        browser: { type: String, default: "Unknown" },
+        userAgent: { type: String, default: "Unknown" },
+        ipAddress: { type: String, default: null },
+        refreshExpiresAt: { type: Date, default: null },
+        lastUsedAt: { type: Date, default: Date.now },
+        revokedAt: { type: Date, default: null },
+    },
+    { _id: false, timestamps: { createdAt: true, updatedAt: false } }
+);
+
 const userSchema = new mongoose.Schema({
     fullname: {
         type: String,
@@ -47,12 +63,10 @@ const userSchema = new mongoose.Schema({
         type: String,
         default: null
     },
-    refreshTokens: [
-        {
-            token: { type: String, required: true },
-            createdAt: { type: Date, default: Date.now }
-        }
-    ]
+    sessions: {
+        type: [sessionSchema],
+        default: []
+    }
 }, { timestamps: true });
 
 userSchema.pre('save', async function () {
@@ -65,22 +79,24 @@ userSchema.methods.isPasswordCorrect = async function (candidatePassword) {
     return bcrypt.compare(candidatePassword, this.password);
 };
 
-userSchema.methods.generateAccessToken = function () {
+userSchema.methods.generateAccessToken = function (sessionId) {
     return jwt.sign(
         {
             id: this._id,
-            email: this.email
+            email: this.email,
+            sessionId
         },
         process.env.ACCESS_SECRET,
         { expiresIn: process.env.ACCESS_EXPIRY || '15m' }
     );
 };
 
-userSchema.methods.generateRefreshToken = function () {
+userSchema.methods.generateRefreshToken = function (sessionId) {
     return jwt.sign(
         {
             id: this._id,
             email: this.email,
+            sessionId,
         },
         process.env.REFRESH_SECRET,
         { expiresIn: process.env.REFRESH_EXPIRY || '7d' }
@@ -90,7 +106,7 @@ userSchema.methods.generateRefreshToken = function () {
 userSchema.methods.toJSON = function () {
     const obj = this.toObject();
     delete obj.password;
-    delete obj.refreshTokens;
+    delete obj.sessions;
     return obj;
 };
 
