@@ -9,6 +9,7 @@ export const MAX_ACTIVE_SESSIONS = Number.isFinite(parsedMaxSessions) && parsedM
     : 3;
 
 const REFRESH_COOKIE_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const ACCESS_COOKIE_MAX_AGE_MS = 15 * 60 * 1000;
 const parsedRetentionDays = Number.parseInt(process.env.SESSION_REVOKED_RETENTION_DAYS || "7", 10);
 const SESSION_REVOKED_RETENTION_DAYS = Number.isFinite(parsedRetentionDays) && parsedRetentionDays >= 0
     ? parsedRetentionDays
@@ -23,7 +24,22 @@ export const refreshCookieOptions = {
     maxAge: REFRESH_COOKIE_MAX_AGE_MS,
 };
 
+export const accessCookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    ...(process.env.NODE_ENV === 'production' && { domain: '.social-pulse.aparagarwal.tech' }),
+    maxAge: ACCESS_COOKIE_MAX_AGE_MS,
+};
+
 export const refreshCookieClearOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    ...(process.env.NODE_ENV === 'production' && { domain: '.social-pulse.aparagarwal.tech' }),
+};
+
+export const accessCookieClearOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',

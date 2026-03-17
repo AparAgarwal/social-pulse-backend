@@ -4,6 +4,8 @@ import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { hashToken } from "../utils/helper.js";
 import {
+    accessCookieClearOptions,
+    accessCookieOptions,
     createSessionForUser,
     findActiveSessionById,
     findActiveSessionByRefreshHash,
@@ -31,8 +33,9 @@ export const registerUser = asyncHandler(async (req, res) => {
         const { accessToken, refreshToken } = createSessionForUser(user, deviceDetails);
         await user.save();
 
+        res.cookie('accessToken', accessToken, accessCookieOptions);
         res.cookie('refreshToken', refreshToken, refreshCookieOptions);
-        return res.status(201).json(new ApiResponse(201, { user, accessToken }, "User registered"));
+        return res.status(201).json(new ApiResponse(201, { user }, "User registered"));
     } catch (err) {
         // Duplicate key (unique) error
         if (err.code === 11000) {
@@ -83,9 +86,10 @@ export const loginUser = asyncHandler(async (req, res) => {
     const { accessToken, refreshToken } = createSessionForUser(user, deviceDetails);
     await user.save();
 
+    res.cookie('accessToken', accessToken, accessCookieOptions);
     res.cookie('refreshToken', refreshToken, refreshCookieOptions);
 
-    return res.status(200).json(new ApiResponse(200, { user, accessToken }, "Logged in"));
+    return res.status(200).json(new ApiResponse(200, { user }, "Logged in"));
 });
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -111,8 +115,9 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     updateSessionRefreshToken(activeSession, newRefreshToken);
     await user.save();
 
+    res.cookie('accessToken', accessToken, accessCookieOptions);
     res.cookie('refreshToken', newRefreshToken, refreshCookieOptions);
-    return res.status(200).json(new ApiResponse(200, { accessToken }, "Access token refreshed"));
+    return res.status(200).json(new ApiResponse(200, null, "Access token refreshed"));
 });
 
 export const logoutUser = asyncHandler(async (req, res) => {
@@ -139,6 +144,7 @@ export const logoutUser = asyncHandler(async (req, res) => {
         }
     }
 
+    res.clearCookie('accessToken', accessCookieClearOptions);
     res.clearCookie('refreshToken', refreshCookieClearOptions);
 
     return res.status(200).json(new ApiResponse(200, null, "Logged out successfully"));
@@ -178,6 +184,7 @@ export const revokeSession = asyncHandler(async (req, res) => {
     await user.save();
 
     if (req.user?.sessionId === sessionId) {
+        res.clearCookie('accessToken', accessCookieClearOptions);
         res.clearCookie('refreshToken', refreshCookieClearOptions);
     }
 

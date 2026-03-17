@@ -18,12 +18,13 @@ const LAST_USED_UPDATE_WINDOW_MS = 5 * 60 * 1000;
 
 export const authenticate = asyncHandler(async (req, res, next) => {
     const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.accessToken;
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    const token = cookieToken || bearerToken;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (!token) {
         throw new ApiError(401, "Access Denied. No token provided!");
     }
-
-    const token = authHeader.split(' ')[1];
 
     try {
         const decoded = verifyAccessToken(token);
