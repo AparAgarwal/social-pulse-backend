@@ -18,14 +18,16 @@ const SESSION_REVOKED_RETENTION_MS = SESSION_REVOKED_RETENTION_DAYS * 24 * 60 * 
 export const refreshCookieOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    ...(process.env.NODE_ENV === 'production' && { domain: '.social-pulse.aparagarwal.tech' }),
     maxAge: REFRESH_COOKIE_MAX_AGE_MS,
 };
 
 export const refreshCookieClearOptions = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',
+    ...(process.env.NODE_ENV === 'production' && { domain: '.social-pulse.aparagarwal.tech' }),
 };
 
 const getRefreshExpiryMs = (session) => {
