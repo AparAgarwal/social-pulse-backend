@@ -22,8 +22,27 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Root
+app.get("/", (req, res) => {
+    res.json({ message: "SocialPulse API is running." });
+});
+
+// Health check
+app.get("/health", (req, res) => {
+    res.json({
+        status: "ok",
+        uptime: Math.floor(process.uptime()),
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development",
+    });
+});
+
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
+
+app.get("/", (req, res) => {
+    res.send("Welcome to the API");
+});
 
 // 404 - handler
 app.use((req, res, next) => {
