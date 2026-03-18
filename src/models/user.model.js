@@ -19,6 +19,7 @@ const sessionSchema = new mongoose.Schema(
 );
 
 const userSchema = new mongoose.Schema({
+    // Core Identity
     fullname: {
         type: String,
         required: true,
@@ -43,26 +44,64 @@ const userSchema = new mongoose.Schema({
         required: true,
         select: false
     },
-    bio: {
-        type: String,
-        default: null
+
+    // Profile Information
+    profile: {
+        bio: {
+            type: String,
+            default: null
+        },
+        location: {
+            type: String,
+            default: null
+        },
+        website: {
+            type: String,
+            default: null
+        },
+        avatar: {
+            url: {
+                type: String,
+                default: null
+            },
+            publicId: {
+                type: String,
+                default: null
+            }
+        },
+        banner: {
+            url: {
+                type: String,
+                default: null
+            },
+            publicId: {
+                type: String,
+                default: null
+            }
+        }
     },
-    avatarUrl: {
-        type: String,
-        default: null
+
+    // Social Metrics
+    socialMetrics: {
+        followersCount: {
+            type: Number,
+            default: 0
+        },
+        followingCount: {
+            type: Number,
+            default: 0
+        }
     },
-    avatarPublicId: {
-        type: String,
-        default: null
+
+    // Account Settings
+    accountSettings: {
+        isPrivate: {
+            type: Boolean,
+            default: false
+        }
     },
-    bannerUrl: {
-        type: String,
-        default: null
-    },
-    bannerPublicId: {
-        type: String,
-        default: null
-    },
+
+    // Sessions Management
     sessions: {
         type: [sessionSchema],
         default: []

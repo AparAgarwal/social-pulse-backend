@@ -16,11 +16,15 @@ import {
 
 const LAST_USED_UPDATE_WINDOW_MS = 5 * 60 * 1000;
 
-export const authenticate = asyncHandler(async (req, res, next) => {
+const getAccessTokenFromRequest = (req) => {
     const authHeader = req.headers.authorization;
     const cookieToken = req.cookies?.accessToken;
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
-    const token = cookieToken || bearerToken;
+    return cookieToken || bearerToken;
+};
+
+export const authenticate = asyncHandler(async (req, res, next) => {
+    const token = getAccessTokenFromRequest(req);
 
     if (!token) {
         throw new ApiError(401, "Access Denied. No token provided!");
@@ -69,6 +73,52 @@ export const authenticate = asyncHandler(async (req, res, next) => {
         }
         throw new ApiError(401, 'Invalid token. Access denied.');
     }
+});
+
+export const optionalAuthenticate = asyncHandler(async (req, res, next) => {
+    req.user = null;
+
+    const token = getAccessTokenFromRequest(req);
+    if (!token) {
+        return next();
+    }
+
+    try {
+        const decoded = verifyAccessToken(token);
+        if (!decoded?.id || !decoded?.sessionId) {
+            return next();
+        }
+
+        const user = await User.findById(decoded.id);
+        if (!user) {
+            return next();
+        }
+
+        const pruneResult = pruneStaleSessions(user);
+        if (pruneResult.changed) {
+            await user.save();
+        }
+
+        const activeSession = findActiveSessionById(user, decoded.sessionId);
+        if (!activeSession) {
+            return next();
+        }
+
+        req.user = {
+            id: user._id.toString(),
+            email: user.email,
+            sessionId: decoded.sessionId,
+        };
+
+        const wasTouched = touchSessionLastUsed(user, decoded.sessionId, LAST_USED_UPDATE_WINDOW_MS);
+        if (wasTouched) {
+            await user.save();
+        }
+    } catch {
+        req.user = null;
+    }
+
+    return next();
 });
 
 export const refreshAuthenticate = asyncHandler(async (req, res, next) => {
