@@ -3,6 +3,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import userRoutes from "./routes/user.routes.js";
 import authRoutes from "./routes/auth.routes.js";
+import postRoutes from "./routes/post.routes.js";
 import { errorHandler } from "./middlewares/error.middleware.js";
 import { ApiError } from "./utils/ApiError.js";
 
@@ -39,10 +40,8 @@ app.get("/health", (req, res) => {
 
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/user', userRoutes);
+app.use('/api/v1/posts', postRoutes);
 
-app.get("/", (req, res) => {
-    res.send("Welcome to the API");
-});
 
 // 404 - handler
 app.use((req, res, next) => {
