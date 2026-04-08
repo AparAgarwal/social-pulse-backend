@@ -1,9 +1,11 @@
 import User from "../models/user.model.js";
 import Follow from "../models/follow.model.js";
+import Post from "../models/post.model.js";
 import { uploadToCloudinary, deleteFromCloudinary } from '../utils/cloudinary.js';
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
+import { getLikedPostIdsSet, toPublicPostWithLikeState } from "../utils/post.helpers.js";
 
 const parsePagination = (query) => {
     const rawPage = Number.parseInt(query?.page, 10);
@@ -336,6 +338,73 @@ export const listFollowing = asyncHandler(async (req, res) => {
             },
             following,
         }, 'Following list fetched successfully.')
+    );
+});
+
+export const listUserPosts = asyncHandler(async (req, res) => {
+    const requesterId = req.user?.id || null;
+    const { page, limit, skip } = parsePagination(req.query);
+    const username = req.params.username?.toLowerCase();
+
+    if (!username) {
+        throw new ApiError(400, "Username is required");
+    }
+
+    const targetUser = await User.findOne({ username })
+        .select("_id username accountSettings.isPrivate");
+
+    if (!targetUser) {
+        throw new ApiError(404, "User not found");
+    }
+
+    const isOwner = requesterId === targetUser._id.toString();
+    let isFollowing = false;
+
+    if (!isOwner && requesterId) {
+        const followRelation = await Follow.exists({
+            follower: requesterId,
+            following: targetUser._id,
+        });
+        isFollowing = Boolean(followRelation);
+    }
+
+    if (targetUser.accountSettings?.isPrivate && !isOwner && !isFollowing) {
+        throw new ApiError(403, "This account is private");
+    }
+
+    const filter = {
+        author: targetUser._id,
+        isDeleted: false,
+        status: "published",
+    };
+
+    if (!isOwner) {
+        filter.visibility = isFollowing ? { $in: ["public", "followers"] } : "public";
+    }
+
+    const [total, posts] = await Promise.all([
+        Post.countDocuments(filter),
+        Post.find(filter)
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit)
+            .populate({ path: "author", select: "fullname username profile.avatar.url" })
+            .lean(),
+    ]);
+
+    const likedPostIdsSet = await getLikedPostIdsSet(posts, requesterId);
+
+    return res.status(200).json(
+        new ApiResponse(200, {
+            user: targetUser.username,
+            pagination: {
+                page,
+                limit,
+                total,
+                hasMore: page * limit < total,
+            },
+            posts: posts.map((post) => toPublicPostWithLikeState(post, likedPostIdsSet, requesterId)),
+        }, "User posts fetched successfully.")
     );
 });
 

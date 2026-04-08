@@ -12,6 +12,7 @@ import {
     unfollowUser,
     listFollowers,
     listFollowing,
+    listUserPosts,
 } from "../controllers/user.controller.js";
 import { uploadAvatarImage, uploadBannerImage } from "../config/upload.js";
 import { validateSchema } from "../middlewares/validate.middleware.js";
@@ -21,6 +22,7 @@ const router = express.Router();
 
 router.get('/me', authenticate, getCurrentUser);
 router.patch('/me', authenticate, validateSchema(updateProfileSchema), updateCurrentUserProfile);
+router.get('/:username/posts', optionalAuthenticate, listUserPosts);
 router.get('/:username', optionalAuthenticate, getPublicUserProfile);
 
 router.patch('/me/avatar', authenticate, uploadAvatarImage, uploadAvatar);
